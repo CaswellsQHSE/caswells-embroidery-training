@@ -58,6 +58,7 @@ export default function Certificate({ cfg, questions, answers, passed, attempts,
     const params = {
       to_email: toEmail,
       learner_name: cfg.learnerName || "Operator",
+      learner_role: cfg.learnerRole || "Embroidery Machine Operator",
       course: cfg.courseTitle,
       site: cfg.site?.name || cfg.site?.id || "Billingham",
       score: `${score} / ${questions.length} (${pct}%)`,
@@ -167,6 +168,15 @@ export default function Certificate({ cfg, questions, answers, passed, attempts,
           <div className="cert-eyebrow">Certificate of Completion</div>
           <div className="cert-course">{cfg.courseTitle}</div>
         </div>
+
+        {/* Learner name */}
+        {cfg.learnerName && (
+          <div style={{ textAlign: "center", marginBottom: "1.25rem" }}>
+            <div style={{ fontSize: "0.65rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#718096", marginBottom: "4px" }}>Awarded to</div>
+            <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1a1a2e" }}>{cfg.learnerName}</div>
+            {cfg.learnerRole && <div style={{ fontSize: "0.82rem", color: "#718096", marginTop: "2px" }}>{cfg.learnerRole}</div>}
+          </div>
+        )}
 
         {/* Score panel */}
         <div className="cert-score-panel">

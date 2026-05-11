@@ -66,7 +66,7 @@ export default function App() {
     <Emergency {...sharedProps} onNext={() => completeAndNext(7)} onBack={() => goTo(6)} />,
     <Assessment cfg={cfg} questions={questions} attempts={attempts}
       maxAttempts={cfg.maxAttempts} onSubmit={submitAssessment} onBack={() => goTo(7)} />,
-    <Certificate cfg={cfg} questions={questions} answers={answers} passed={passed}
+    <Certificate cfg={{ ...cfg, learnerName: learner.name, learnerRole: learner.role }} questions={questions} answers={answers} passed={passed}
       attempts={attempts} onRetake={retake} onBack={() => goTo(8)} />,
   ];
 
