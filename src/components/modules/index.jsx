@@ -649,22 +649,27 @@ export function Assessment({ cfg, questions, attempts, maxAttempts, onSubmit, on
 export function Certificate({ cfg, questions, answers, passed, attempts, onRetake, onBack }) {
   const [emailSent, setEmailSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [emailError, setEmailError] = useState("");
 
   const score = questions.filter((q, i) => answers[i] === q.correct).length;
   const pct = Math.round((score / questions.length) * 100);
-  const today = new Date();
+  const todayRef = React.useRef(new Date());
+  const today = todayRef.current;
   const dateStr = today.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
   const refresherDate = new Date(today);
   refresherDate.setFullYear(refresherDate.getFullYear() + 1);
   const refresherStr = refresherDate.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
-  const ref = `EMB-${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}${String(today.getDate()).padStart(2,"0")}-${String(Math.floor(Math.random()*9000)+1000)}`;
+  const certRef = React.useRef(`EMB-${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}${String(today.getDate()).padStart(2,"0")}-${String(Math.floor(Math.random()*9000)+1000)}`);
+  const ref = certRef.current;
 
   const sendEmail = async () => {
     if (!cfg.emailjs?.serviceId || !cfg.emailjs?.publicKey) return;
     setSending(true);
+    setEmailError("");
     try {
       const emailjs = await import("@emailjs/browser");
       await emailjs.send(cfg.emailjs.serviceId, cfg.emailjs.templateId, {
+        to_email: cfg.emailjs.toEmail,
         name: "Embroidery Operator",
         role: "Embroidery Machine Operator",
         site: cfg.site.name,
@@ -677,10 +682,17 @@ export function Certificate({ cfg, questions, answers, passed, attempts, onRetak
       setEmailSent(true);
     } catch (e) {
       console.error(e);
+      setEmailError("Email failed to send. Please notify " + cfg.qhseManager + " manually.");
     } finally {
       setSending(false);
     }
   };
+
+  // Auto-send on first pass render
+  React.useEffect(() => {
+    if (passed) sendEmail();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!passed) {
     return (
@@ -727,59 +739,92 @@ export function Certificate({ cfg, questions, answers, passed, attempts, onRetak
         title={`${cfg.orgName} — ${cfg.courseTitle}`}
         desc="You have successfully completed this training module." />
 
-      <div style={{
-        background: "linear-gradient(135deg, var(--brand) 0%, #0a5fa8 100%)",
-        borderRadius: "12px", padding: "2rem", color: "white", textAlign: "center",
-        marginBottom: "1.5rem"
+      {/* ── Printable certificate card ── */}
+      <div id="certificate-card" style={{
+        background: "#ffffff",
+        border: "3px solid #08488D",
+        borderRadius: "12px",
+        padding: "2rem 2.5rem",
+        marginBottom: "1.5rem",
+        boxShadow: "0 4px 20px rgba(8,72,141,0.12)"
       }}>
-        {cfg.logoUrl && (
-          <img src={cfg.logoUrl} alt={cfg.orgName}
-            style={{ height: "48px", marginBottom: "1rem", filter: "brightness(0) invert(1)" }} />
-        )}
-        <h2 style={{ margin: "0 0 0.25rem", fontSize: "1.4rem" }}>Certificate of Completion</h2>
-        <p style={{ margin: "0 0 1.5rem", opacity: 0.85 }}>{cfg.courseTitle}</p>
-        <div style={{ background: "rgba(255,255,255,0.12)", borderRadius: "8px",
-          padding: "1.25rem", marginBottom: "1.5rem" }}>
-          <div style={{ fontSize: "2.5rem", fontWeight: 800, marginBottom: "0.25rem" }}>{pct}%</div>
-          <div style={{ opacity: 0.9 }}>{score} / {questions.length} correct</div>
+        {/* Logo */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: "1.25rem" }}>
+          {cfg.logoUrl
+            ? <img src={cfg.logoUrl} alt={cfg.orgName} style={{ height: "48px", maxWidth: "220px", objectFit: "contain" }} />
+            : <span style={{ fontWeight: 800, fontSize: "1.1rem", color: "#08488D" }}>{cfg.orgName}</span>
+          }
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem",
-          textAlign: "left", fontSize: "0.875rem" }}>
+
+        <hr style={{ border: "none", borderTop: "1px solid #dce4ef", margin: "0 0 1.25rem" }} />
+
+        {/* Title */}
+        <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+          <div style={{ fontSize: "1.2rem", fontWeight: 800, color: "#08488D", marginBottom: "4px" }}>Certificate of Completion</div>
+          <div style={{ fontSize: "0.85rem", color: "#718096" }}>{cfg.courseTitle}</div>
+        </div>
+
+        {/* Score panel */}
+        <div style={{ background: "#08488D", borderRadius: "8px", padding: "1.25rem", textAlign: "center", marginBottom: "1.5rem" }}>
+          <div style={{ fontSize: "2.5rem", fontWeight: 900, color: "#fff", lineHeight: 1 }}>{pct}%</div>
+          <div style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.8)", marginTop: "4px" }}>{score} / {questions.length} correct</div>
+        </div>
+
+        {/* Meta grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem 1.5rem", marginBottom: "1.25rem" }}>
           {[
-            ["Site", cfg.site.name],
-            ["Date completed", dateStr],
-            ["Reference", ref],
-            ["Refresher due", refresherStr],
+            ["SITE", cfg.site.name],
+            ["DATE COMPLETED", dateStr],
+            ["REFERENCE", ref],
+            ["REFRESHER DUE", refresherStr],
           ].map(([label, val]) => (
             <div key={label}>
-              <div style={{ opacity: 0.7, fontSize: "0.75rem", textTransform: "uppercase",
-                letterSpacing: "0.05em" }}>{label}</div>
-              <div style={{ fontWeight: 600 }}>{val}</div>
+              <div style={{ fontSize: "0.65rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#718096", marginBottom: "3px" }}>{label}</div>
+              <div style={{ fontSize: "0.92rem", fontWeight: 700, color: "#08488D" }}>{val}</div>
             </div>
           ))}
         </div>
+
+        <hr style={{ border: "none", borderTop: "1px solid #dce4ef", margin: "0 0 0.75rem" }} />
+        <div style={{ fontSize: "0.72rem", color: "#718096", textAlign: "center" }}>
+          Issued by {cfg.site?.qhseManager || cfg.qhseManager} · {cfg.orgName} · {cfg.site?.address || ""}
+        </div>
       </div>
+
+      {/* ── Action buttons ── */}
+      <div style={{ display: "flex", gap: "12px", marginBottom: "1rem", flexWrap: "wrap" }}>
+        <button className="btn btn-primary" onClick={() => window.print()}>
+          🖨 Print certificate
+        </button>
+        {!emailSent ? (
+          <button className="btn btn-ghost" onClick={sendEmail} disabled={sending}>
+            {sending ? "Sending…" : "✉ Send to QHSE"}
+          </button>
+        ) : (
+          <button className="btn btn-ghost" disabled style={{ color: "#166534" }}>✓ Email sent</button>
+        )}
+      </div>
+
+      {emailError && (
+        <div style={{ fontSize: "0.82rem", color: "#991b1b", background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "6px", padding: "0.6rem 1rem", marginBottom: "1rem" }}>
+          {emailError}
+        </div>
+      )}
+      {emailSent && (
+        <div style={{ fontSize: "0.82rem", color: "#166534", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: "6px", padding: "0.6rem 1rem", marginBottom: "1rem" }}>
+          Completion notification sent to {cfg.emailjs?.toEmail}.
+        </div>
+      )}
 
       <Box type="info" title="Next steps" icon="📋">
         <ul>
-          <li>Your completion will be notified to {cfg.qhseManager} by email</li>
+          <li>Your completion has been notified to {cfg.qhseManager} by email</li>
           <li>This certificate reference should be retained in your training file</li>
           <li>You may now operate the SWF embroidery machines at Billingham, subject to being on the authorised operator register</li>
           <li>Refresher training is due: <strong>{refresherStr}</strong></li>
           <li>Always follow OP-11 and CAS22 REV 3 during day-to-day operations</li>
         </ul>
       </Box>
-
-      {!emailSent ? (
-        <button className="btn btn-primary" style={{ width: "100%", marginBottom: "1rem" }}
-          onClick={sendEmail} disabled={sending}>
-          {sending ? "Sending notification..." : "✉ Send completion notification to QHSE"}
-        </button>
-      ) : (
-        <Box type="info" icon="✅" title="Completion notification sent">
-          <p>An email has been sent to {cfg.emailjs?.toEmail}.</p>
-        </Box>
-      )}
 
       <Card title="Review — all answers" icon="📋">
         {questions.map((q, i) => {
