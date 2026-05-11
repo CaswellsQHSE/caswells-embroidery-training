@@ -24,7 +24,7 @@ export const CONFIG = {
   // ── EmailJS (completion notifications) ───────────────────────────────────
   emailjs: {
     serviceId: "service_lphj3jw",
-    templateId: "template_k8rovlt",
+    templateId: "template_zgaz4qw",
     publicKey: "4rQoJPxmMeGSfuagE",
     toEmail: "qhse@caswellsgroup.com",
   },
