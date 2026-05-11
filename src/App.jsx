@@ -17,6 +17,7 @@ export default function App() {
   const [answers, setAnswers] = useState({});
   const [attempts, setAttempts] = useState(0);
   const [passed, setPassed] = useState(false);
+  const [learner, setLearner] = useState({ name: "", role: "" });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
 
@@ -52,10 +53,10 @@ export default function App() {
     else if (pass !== null) window.alert("Incorrect password.");
   }, [cfg.adminPassword]);
 
-  const sharedProps = { cfg };
+  const sharedProps = { cfg: { ...cfg, learnerName: learner.name, learnerRole: learner.role } };
 
   const moduleComponents = [
-    <Welcome {...sharedProps} onNext={() => completeAndNext(0)} />,
+    <Welcome {...sharedProps} onNext={(name, role) => { setLearner({ name, role }); completeAndNext(0); }} />,
     <Machine {...sharedProps} onNext={() => completeAndNext(1)} onBack={() => goTo(0)} />,
     <Hazards {...sharedProps} onNext={() => completeAndNext(2)} onBack={() => goTo(1)} />,
     <Operation {...sharedProps} onNext={() => completeAndNext(3)} onBack={() => goTo(2)} />,

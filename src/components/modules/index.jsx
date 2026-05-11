@@ -54,7 +54,7 @@ export function Welcome({ cfg, onNext }) {
         </label>
       </Box>
 
-      <NavRow onNext={onNext} nextDisabled={!name.trim() || !role.trim() || !agreed}
+      <NavRow onNext={() => onNext(name, role)} nextDisabled={!name.trim() || !role.trim() || !agreed}
         nextLabel="Start training →" />
     </div>
   );
@@ -670,8 +670,8 @@ export function Certificate({ cfg, questions, answers, passed, attempts, onRetak
       const emailjs = await import("@emailjs/browser");
       await emailjs.send(cfg.emailjs.serviceId, cfg.emailjs.templateId, {
         to_email: cfg.emailjs.toEmail,
-        name: "Embroidery Operator",
-        role: "Embroidery Machine Operator",
+        name: cfg.learnerName || "Embroidery Operator",
+        role: cfg.learnerRole || "Embroidery Machine Operator",
         site: cfg.site.name,
         score: `${score}/${questions.length} (${pct}%)`,
         date: dateStr,
@@ -763,6 +763,15 @@ export function Certificate({ cfg, questions, answers, passed, attempts, onRetak
           <div style={{ fontSize: "1.2rem", fontWeight: 800, color: "#08488D", marginBottom: "4px" }}>Certificate of Completion</div>
           <div style={{ fontSize: "0.85rem", color: "#718096" }}>{cfg.courseTitle}</div>
         </div>
+
+        {/* Learner name */}
+        {cfg.learnerName && (
+          <div style={{ textAlign: "center", marginBottom: "1.25rem" }}>
+            <div style={{ fontSize: "0.65rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#718096", marginBottom: "4px" }}>Awarded to</div>
+            <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "#1a1a2e" }}>{cfg.learnerName}</div>
+            {cfg.learnerRole && <div style={{ fontSize: "0.82rem", color: "#718096", marginTop: "2px" }}>{cfg.learnerRole}</div>}
+          </div>
+        )}
 
         {/* Score panel */}
         <div style={{ background: "#08488D", borderRadius: "8px", padding: "1.25rem", textAlign: "center", marginBottom: "1.5rem" }}>
